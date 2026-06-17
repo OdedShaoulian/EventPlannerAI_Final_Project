@@ -1,0 +1,1 @@
+"""EventPlanner AI source package."""
