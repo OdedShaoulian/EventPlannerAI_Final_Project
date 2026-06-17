@@ -19,12 +19,12 @@ st.set_page_config(page_title="EventPlanner AI", page_icon="🎈", layout="wide"
 # ─── CSS ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Rubik:wght@300;400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Rubik:wght@300;400;500;600;700&display=swap');
 
     /* ── Global ──────────────────────────────────────────────────────────── */
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Assistant', 'Rubik', sans-serif !important;
-        background-color: #F8F7F4 !important;
+        background-color: #FAFAFA !important; /* Premium light gray */
     }
     [data-testid="stHeader"] { display: none !important; }
     footer { visibility: hidden !important; }
@@ -32,70 +32,69 @@ st.markdown("""
 
     /* Extra bottom padding so content never hides behind the fixed input */
     .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 6rem !important;
-        max-width: 1200px !important;
+        padding-top: 1.5rem !important;
+        padding-bottom: 7rem !important;
+        max-width: 1000px !important; /* Narrower for better readability */
     }
 
-    /* ── Chat input — Streamlit pins it at bottom natively when outside tabs */
+    /* ── Chat input ──────────────────────────────────────────────────────── */
     div[data-testid="stChatInput"] {
-        border-radius: 28px !important;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.10) !important;
-        border: 1.5px solid #E5E7EB !important;
+        border-radius: 24px !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+        border: 1px solid #E5E7EB !important;
         background-color: #FFFFFF !important;
-        padding: 4px 8px !important;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        padding: 4px 12px !important;
+        transition: all 0.25s ease !important;
     }
     div[data-testid="stChatInput"]:focus-within {
-        border-color: #C5A880 !important;
-        box-shadow: 0 4px 24px rgba(197,168,128,0.22) !important;
+        border-color: #4F46E5 !important;
+        box-shadow: 0 4px 20px rgba(79,70,229,0.15), 0 0 0 2px rgba(79,70,229,0.1) !important;
     }
     div[data-testid="stChatInput"] textarea {
         background-color: transparent !important;
         color: #1F2937 !important;
-        font-size: 1rem !important;
+        font-size: 1.05rem !important;
         font-family: 'Assistant', sans-serif !important;
-        /* No forced RTL on input — browser handles bidi automatically */
     }
 
     /* ── Chat bubbles ────────────────────────────────────────────────────── */
     div[data-testid="stChatMessage"] {
         background-color: transparent !important;
         padding: 0 !important;
-        margin-bottom: 1.4rem !important;
+        margin-bottom: 1.8rem !important;
         display: flex !important;
-        gap: 10px !important;
+        gap: 16px !important;
         align-items: flex-start !important;
     }
 
-    /* User bubble — right side, gold */
+    /* User bubble — right side, subtle soft gray */
     div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
         flex-direction: row-reverse !important;
     }
     div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) > div[data-testid="stChatMessageContent"] {
-        background-color: #C5A880 !important;
+        background-color: #F3F4F6 !important;
         border-radius: 18px 4px 18px 18px !important;
-        padding: 0.85rem 1.3rem !important;
-        box-shadow: 0 3px 12px rgba(197,168,128,0.25) !important;
+        padding: 0.9rem 1.4rem !important;
+        box-shadow: none !important;
         border: none !important;
         margin-left: auto !important;
         margin-right: 0 !important;
-        max-width: 75% !important;
+        max-width: 80% !important;
     }
 
-    /* Assistant bubble — left side, white */
+    /* Assistant bubble — left side, pristine white with shadow */
     div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) {
         flex-direction: row !important;
     }
     div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) > div[data-testid="stChatMessageContent"] {
         background-color: #FFFFFF !important;
         border-radius: 4px 18px 18px 18px !important;
-        padding: 0.85rem 1.3rem !important;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.06) !important;
-        border: 1px solid #E9EAEC !important;
+        padding: 1rem 1.5rem !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.02) !important;
+        border: 1px solid #F3F4F6 !important;
         margin-right: auto !important;
         margin-left: 0 !important;
-        max-width: 82% !important;
+        max-width: 85% !important;
     }
 
     /* ── RTL fix for all text inside chat bubbles ────────────────────────── */
@@ -107,145 +106,164 @@ st.markdown("""
         direction: rtl !important;
         text-align: right !important;
         margin: 0.3rem 0 !important;
-        line-height: 1.65 !important;
+        line-height: 1.7 !important;
     }
-    /* Lists: keep bullet on the right for RTL, indent from right */
     div[data-testid="stChatMessageContent"] ul,
     div[data-testid="stChatMessageContent"] ol {
         direction: rtl !important;
         text-align: right !important;
-        padding-right: 1.4rem !important;
+        padding-right: 1.6rem !important;
         padding-left: 0 !important;
-        margin: 0.4rem 0 !important;
+        margin: 0.5rem 0 !important;
     }
     div[data-testid="stChatMessageContent"] li {
         direction: rtl !important;
         text-align: right !important;
-        margin-bottom: 0.25rem !important;
+        margin-bottom: 0.4rem !important;
     }
     div[data-testid="stChatMessageContent"] strong,
     div[data-testid="stChatMessageContent"] b {
-        font-weight: 700 !important;
+        font-weight: 600 !important;
+        color: inherit !important;
     }
+    
     /* User bubble text colors */
     div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) div[data-testid="stChatMessageContent"],
     div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) div[data-testid="stChatMessageContent"] * {
-        color: #0B132B !important;
+        color: #111827 !important;
         font-family: 'Rubik', sans-serif !important;
     }
     /* Assistant bubble text colors */
     div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) div[data-testid="stChatMessageContent"],
     div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) div[data-testid="stChatMessageContent"] * {
-        color: #1F2937 !important;
+        color: #374151 !important;
         font-family: 'Assistant', sans-serif !important;
     }
 
     /* ── Sidebar ─────────────────────────────────────────────────────────── */
     [data-testid="stSidebar"] {
-        background-color: #0B132B !important;
-        border-left: 2.5px solid #C5A880 !important;
+        background-color: #111827 !important; /* Very dark slate, Apple Pro level */
+        border-left: 1px solid #1F2937 !important;
     }
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2,
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3,
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span,
     [data-testid="stSidebar"] label {
-        color: #FFFFFF !important;
+        color: #E5E7EB !important; /* Light Gray */
         font-family: 'Rubik', sans-serif !important;
     }
     [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-        color: #C5A880 !important;
+        color: #F9FAFB !important; /* Pure White */
         font-weight: 600 !important;
-        border-bottom: 1px solid rgba(197,168,128,0.2);
-        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #374151;
+        padding-bottom: 0.6rem;
     }
+    
+    /* FIX: Make small text, captions, and API key instruction highly legible */
+    [data-testid="stSidebar"] small,
+    [data-testid="stSidebar"] div[data-testid="stCaptionContainer"] p,
+    [data-testid="stSidebar"] div[data-testid="stCaptionContainer"] span,
+    [data-testid="stSidebar"] div[data-testid="stText"] {
+        color: #9CA3AF !important; /* Lighter gray for captions */
+        font-size: 0.85rem !important;
+    }
+
     [data-testid="stSidebar"] div[data-testid="stExpander"] {
-        background-color: #141E3C !important;
-        border: 1px solid rgba(197,168,128,0.4) !important;
-        border-radius: 8px !important;
+        background-color: #1F2937 !important;
+        border: 1px solid #374151 !important;
+        border-radius: 10px !important;
+    }
+    [data-testid="stSidebar"] div[data-testid="stExpander"] p {
+        color: #D1D5DB !important;
     }
 
     /* ── Buttons ─────────────────────────────────────────────────────────── */
+    /* Primary / Main area buttons */
     div.stButton > button {
-        background: linear-gradient(135deg, #C5A880 0%, #A38458 100%) !important;
-        color: #0B132B !important;
+        background-color: #4F46E5 !important; /* Sleek Indigo */
+        color: #FFFFFF !important;
         font-family: 'Rubik', sans-serif !important;
-        font-weight: 700 !important;
-        font-size: 1rem !important;
-        border: 1px solid #C5A880 !important;
-        padding: 0.6rem 2rem !important;
-        border-radius: 8px !important;
-        box-shadow: 0 4px 15px rgba(197,168,128,0.25) !important;
-        transition: all 0.3s cubic-bezier(0.4,0,0.2,1) !important;
+        font-weight: 600 !important;
+        font-size: 1.05rem !important;
+        border: none !important;
+        padding: 0.65rem 2rem !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 12px rgba(79,70,229,0.2) !important;
+        transition: all 0.2s ease !important;
         width: 100% !important;
     }
     div.stButton > button:hover {
+        background-color: #4338CA !important;
         transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(197,168,128,0.45) !important;
-        background: linear-gradient(135deg, #D4B993 0%, #B59569 100%) !important;
+        box-shadow: 0 6px 16px rgba(79,70,229,0.3) !important;
     }
-    div.stButton > button:active { transform: translateY(1px) !important; }
+    div.stButton > button:active { transform: translateY(0) !important; }
 
-    div[data-testid="stSidebar"] div.stButton > button {
-        background: linear-gradient(135deg, #1C2B54 0%, #101B35 100%) !important;
-        color: #C5A880 !important;
-        border: 1px solid #C5A880 !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
+    /* Sidebar Buttons (Secondary style) */
+    [data-testid="stSidebar"] button[kind="secondary"] {
+        background-color: #1F2937 !important;
+        color: #F9FAFB !important;
+        border: 1px solid #4B5563 !important;
+        box-shadow: none !important;
     }
-    div[data-testid="stSidebar"] div.stButton > button:hover {
-        background: linear-gradient(135deg, #25396D 0%, #19274D 100%) !important;
-        color: #FFFFFF !important;
+    [data-testid="stSidebar"] button[kind="secondary"]:hover {
+        background-color: #374151 !important;
+        border-color: #9CA3AF !important;
     }
 
     /* ── Cards / containers ──────────────────────────────────────────────── */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #FFFFFF !important;
-        border: 1px solid #E5E8EB !important;
-        border-radius: 12px !important;
+        border: 1px solid #E5E7EB !important;
+        border-radius: 16px !important;
         box-shadow: 0 4px 20px rgba(0,0,0,0.03) !important;
-        padding: 1.5rem !important;
+        padding: 1.75rem !important;
         margin-bottom: 1.5rem !important;
     }
 
     /* ── Tabs ────────────────────────────────────────────────────────────── */
     div[data-testid="stTabBar"] {
         background-color: transparent !important;
-        border-bottom: 2px solid #E5E7EB !important;
-        gap: 24px !important;
-        margin-bottom: 1.5rem !important;
+        border-bottom: 2px solid #F3F4F6 !important;
+        gap: 32px !important;
+        margin-bottom: 2rem !important;
     }
     button[data-testid="stMarker"] {
         font-family: 'Rubik', sans-serif !important;
-        font-weight: 600 !important;
+        font-weight: 500 !important;
         font-size: 1.05rem !important;
-        color: #64748B !important;
+        color: #9CA3AF !important;
         transition: color 0.2s ease !important;
         background: transparent !important;
         border: none !important;
+        padding-bottom: 0.5rem !important;
     }
     button[data-testid="stMarker"][aria-selected="true"] {
-        color: #0B132B !important;
-        border-bottom: 3px solid #C5A880 !important;
+        color: #111827 !important;
+        font-weight: 600 !important;
+        border-bottom: 3px solid #4F46E5 !important; /* Indigo accent */
     }
 
     /* ── RAG source card ──────────────────────────────────────────────────── */
     .source-card {
-        background-color: #FAF9F6;
-        padding: 1.1rem 1.2rem;
-        border-radius: 10px;
-        border: 1px dashed rgba(197,168,128,0.4);
-        margin-bottom: 1rem;
+        background-color: #F9FAFB;
+        border-right: 4px solid #4F46E5;
+        padding: 14px 18px;
+        margin-bottom: 14px;
+        border-radius: 8px;
+        font-family: 'Assistant', sans-serif;
         direction: rtl;
         text-align: right;
+        color: #374151;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Minimalist text header
 st.markdown("""
-<div style="text-align: center; margin-top: 0.5rem; margin-bottom: 1.5rem;">
-    <h1 style="font-family: 'Rubik', sans-serif; font-size: 2.8rem; font-weight: 700; background: linear-gradient(90deg, #0B132B 0%, #C5A880 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: inline-block; margin-bottom: 0.1rem;">EventPlanner AI</h1>
-    <p style="font-family: 'Assistant', sans-serif; font-size: 1.15rem; color: #4B5563; font-weight: 400; margin-top: 0px;">עוזר ה-AI היוקרתי לתכנון אירועים והפקות מושלמות ✨</p>
+<div style="text-align: center; margin-top: 1rem; margin-bottom: 2rem;">
+    <h1 style="font-family: 'Rubik', sans-serif; font-size: 3rem; font-weight: 700; color: #111827; display: inline-block; margin-bottom: 0.2rem;">EventPlanner <span style="color: #4F46E5;">AI</span></h1>
+    <p style="font-family: 'Assistant', sans-serif; font-size: 1.2rem; color: #6B7280; font-weight: 400; margin-top: 0px;">עוזר ה-AI המתקדם לתכנון והפקת אירועים מושלמים</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -283,8 +301,8 @@ with st.sidebar:
     
     branch_name = get_current_git_branch()
     st.markdown(
-        f"<div style='text-align: center; margin-top: -0.8rem; margin-bottom: 1.2rem; font-size: 0.85rem; color: #C5A880; font-family: \"Rubik\", sans-serif;'>"
-        f"🌿 ענף פעיל: <code style='color: #FFFFFF; background-color: #141E3C; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(197, 168, 128, 0.3);'>{branch_name}</code>"
+        f"<div style='text-align: center; margin-top: -0.8rem; margin-bottom: 1.2rem; font-size: 0.85rem; color: #9CA3AF; font-family: \"Rubik\", sans-serif;'>"
+        f"🌿 ענף פעיל: <code style='color: #4F46E5; background-color: #1F2937; padding: 2px 8px; border-radius: 6px; border: 1px solid #374151; font-weight: 600;'>{branch_name}</code>"
         f"</div>",
         unsafe_allow_html=True
     )
