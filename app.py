@@ -37,17 +37,7 @@ st.markdown("""
         max-width: 1200px !important;
     }
 
-    /* ── Chat input — always fixed at bottom of viewport ─────────────────── */
-    [data-testid="stBottom"] {
-        position: fixed !important;
-        bottom: 0 !important;
-        z-index: 200 !important;
-        padding: 0.8rem 2rem 1.2rem !important;
-        background: linear-gradient(to bottom, transparent, #F8F7F4 45%) !important;
-        /* Streamlit sidebar is 244px wide on the left */
-        left: 244px !important;
-        right: 0 !important;
-    }
+    /* ── Chat input — Streamlit pins it at bottom natively when outside tabs */
     div[data-testid="stChatInput"] {
         border-radius: 28px !important;
         box-shadow: 0 4px 24px rgba(0,0,0,0.10) !important;
@@ -65,8 +55,7 @@ st.markdown("""
         color: #1F2937 !important;
         font-size: 1rem !important;
         font-family: 'Assistant', sans-serif !important;
-        direction: rtl !important;
-        text-align: right !important;
+        /* No forced RTL on input — browser handles bidi automatically */
     }
 
     /* ── Chat bubbles ────────────────────────────────────────────────────── */
