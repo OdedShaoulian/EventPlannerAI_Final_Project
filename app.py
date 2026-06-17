@@ -240,6 +240,19 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
+def get_current_git_branch() -> str:
+    import subprocess
+    try:
+        branch = subprocess.check_output(
+            ["git", "branch", "--show-current"],
+            stderr=subprocess.DEVNULL,
+            text=True
+        ).strip()
+        return branch if branch else "main"
+    except Exception:
+        return "Unknown"
+
+
 def init_state() -> None:
     defaults = {
         "image_analysis": "",
@@ -257,6 +270,14 @@ init_state()
 # Sidebar Control Panel
 with st.sidebar:
     st.markdown("<h2 style='text-align: center; margin-bottom: 1rem;'>✨ פאנל בקרה</h2>", unsafe_allow_html=True)
+    
+    branch_name = get_current_git_branch()
+    st.markdown(
+        f"<div style='text-align: center; margin-top: -0.8rem; margin-bottom: 1.2rem; font-size: 0.85rem; color: #C5A880; font-family: \"Rubik\", sans-serif;'>"
+        f"🌿 ענף פעיל: <code style='color: #FFFFFF; background-color: #141E3C; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(197, 168, 128, 0.3);'>{branch_name}</code>"
+        f"</div>",
+        unsafe_allow_html=True
+    )
     
     api_key = st.text_input("OPENAI_API_KEY", value=OPENAI_API_KEY, type="password")
     st.warning("אין להעלות מפתח API ל־GitHub. השתמשו בקובץ .env מקומי בלבד.")
