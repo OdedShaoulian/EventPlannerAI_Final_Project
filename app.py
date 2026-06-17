@@ -1,23 +1,11 @@
 from __future__ import annotations
 
 import os
+import subprocess
 from pathlib import Path
 
-# pyrefly: ignore [missing-import]
-import streamlit as st  
-# pyrefly: ignore [missing-import]
+import streamlit as st
 from dotenv import load_dotenv
-
-import importlib
-import src.config
-import src.openai_utils
-import src.rag
-import src.tts
-
-importlib.reload(src.config)
-importlib.reload(src.openai_utils)
-importlib.reload(src.rag)
-importlib.reload(src.tts)
 
 from src.config import BASE_DIR, KNOWLEDGE_DIR, OPENAI_API_KEY
 from src.openai_utils import analyze_image, chat_with_ai, create_openai_client
@@ -28,42 +16,147 @@ load_dotenv(BASE_DIR / ".env")
 
 st.set_page_config(page_title="EventPlanner AI", page_icon="🎈", layout="wide")
 
-# Inject premium, luxury celebratory CSS styling
+# ─── CSS ──────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&family=Rubik:wght@300;400;500;700&display=swap');
 
-    /* Global fonts and pearl background styling */
-    html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+    /* ── Global ──────────────────────────────────────────────────────────── */
+    html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Assistant', 'Rubik', sans-serif !important;
-        background-color: #FAFAFA !important;
-        direction: rtl;
-        text-align: right;
+        background-color: #F8F7F4 !important;
     }
-    
-    /* Remove default Streamlit top margin, header, and footer */
-    [data-testid="stHeader"] {
-        display: none !important;
-    }
-    footer {
-        visibility: hidden !important;
-    }
-    #MainMenu {
-        visibility: hidden !important;
-    }
+    [data-testid="stHeader"] { display: none !important; }
+    footer { visibility: hidden !important; }
+    #MainMenu { visibility: hidden !important; }
+
+    /* Extra bottom padding so content never hides behind the fixed input */
     .block-container {
         padding-top: 1rem !important;
-        padding-bottom: 2rem !important;
+        padding-bottom: 6rem !important;
         max-width: 1200px !important;
     }
-    
-    /* Sidebar styling: Luxury Midnight Blue and Gold */
+
+    /* ── Chat input — always fixed at bottom of viewport ─────────────────── */
+    [data-testid="stBottom"] {
+        position: fixed !important;
+        bottom: 0 !important;
+        z-index: 200 !important;
+        padding: 0.8rem 2rem 1.2rem !important;
+        background: linear-gradient(to bottom, transparent, #F8F7F4 45%) !important;
+        /* Streamlit sidebar is 244px wide on the left */
+        left: 244px !important;
+        right: 0 !important;
+    }
+    div[data-testid="stChatInput"] {
+        border-radius: 28px !important;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.10) !important;
+        border: 1.5px solid #E5E7EB !important;
+        background-color: #FFFFFF !important;
+        padding: 4px 8px !important;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+    }
+    div[data-testid="stChatInput"]:focus-within {
+        border-color: #C5A880 !important;
+        box-shadow: 0 4px 24px rgba(197,168,128,0.22) !important;
+    }
+    div[data-testid="stChatInput"] textarea {
+        background-color: transparent !important;
+        color: #1F2937 !important;
+        font-size: 1rem !important;
+        font-family: 'Assistant', sans-serif !important;
+        direction: rtl !important;
+        text-align: right !important;
+    }
+
+    /* ── Chat bubbles ────────────────────────────────────────────────────── */
+    div[data-testid="stChatMessage"] {
+        background-color: transparent !important;
+        padding: 0 !important;
+        margin-bottom: 1.4rem !important;
+        display: flex !important;
+        gap: 10px !important;
+        align-items: flex-start !important;
+    }
+
+    /* User bubble — right side, gold */
+    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) {
+        flex-direction: row-reverse !important;
+    }
+    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) > div[data-testid="stChatMessageContent"] {
+        background-color: #C5A880 !important;
+        border-radius: 18px 4px 18px 18px !important;
+        padding: 0.85rem 1.3rem !important;
+        box-shadow: 0 3px 12px rgba(197,168,128,0.25) !important;
+        border: none !important;
+        margin-left: auto !important;
+        margin-right: 0 !important;
+        max-width: 75% !important;
+    }
+
+    /* Assistant bubble — left side, white */
+    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) {
+        flex-direction: row !important;
+    }
+    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) > div[data-testid="stChatMessageContent"] {
+        background-color: #FFFFFF !important;
+        border-radius: 4px 18px 18px 18px !important;
+        padding: 0.85rem 1.3rem !important;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.06) !important;
+        border: 1px solid #E9EAEC !important;
+        margin-right: auto !important;
+        margin-left: 0 !important;
+        max-width: 82% !important;
+    }
+
+    /* ── RTL fix for all text inside chat bubbles ────────────────────────── */
+    div[data-testid="stChatMessageContent"] {
+        direction: rtl !important;
+        text-align: right !important;
+    }
+    div[data-testid="stChatMessageContent"] p {
+        direction: rtl !important;
+        text-align: right !important;
+        margin: 0.3rem 0 !important;
+        line-height: 1.65 !important;
+    }
+    /* Lists: keep bullet on the right for RTL, indent from right */
+    div[data-testid="stChatMessageContent"] ul,
+    div[data-testid="stChatMessageContent"] ol {
+        direction: rtl !important;
+        text-align: right !important;
+        padding-right: 1.4rem !important;
+        padding-left: 0 !important;
+        margin: 0.4rem 0 !important;
+    }
+    div[data-testid="stChatMessageContent"] li {
+        direction: rtl !important;
+        text-align: right !important;
+        margin-bottom: 0.25rem !important;
+    }
+    div[data-testid="stChatMessageContent"] strong,
+    div[data-testid="stChatMessageContent"] b {
+        font-weight: 700 !important;
+    }
+    /* User bubble text colors */
+    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) div[data-testid="stChatMessageContent"],
+    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-user"]) div[data-testid="stChatMessageContent"] * {
+        color: #0B132B !important;
+        font-family: 'Rubik', sans-serif !important;
+    }
+    /* Assistant bubble text colors */
+    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) div[data-testid="stChatMessageContent"],
+    div[data-testid="stChatMessage"]:has([data-testid="chatAvatarIcon-assistant"]) div[data-testid="stChatMessageContent"] * {
+        color: #1F2937 !important;
+        font-family: 'Assistant', sans-serif !important;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────────── */
     [data-testid="stSidebar"] {
         background-color: #0B132B !important;
         border-left: 2.5px solid #C5A880 !important;
     }
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1,
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2,
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3,
     [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span,
@@ -74,16 +167,16 @@ st.markdown("""
     [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
         color: #C5A880 !important;
         font-weight: 600 !important;
-        border-bottom: 1px solid rgba(197, 168, 128, 0.2);
+        border-bottom: 1px solid rgba(197,168,128,0.2);
         padding-bottom: 0.5rem;
     }
     [data-testid="stSidebar"] div[data-testid="stExpander"] {
         background-color: #141E3C !important;
-        border: 1px solid rgba(197, 168, 128, 0.4) !important;
+        border: 1px solid rgba(197,168,128,0.4) !important;
         border-radius: 8px !important;
     }
-    
-    /* Styled Action Buttons - Gold/Champagne Gradient */
+
+    /* ── Buttons ─────────────────────────────────────────────────────────── */
     div.stButton > button {
         background: linear-gradient(135deg, #C5A880 0%, #A38458 100%) !important;
         color: #0B132B !important;
@@ -93,124 +186,39 @@ st.markdown("""
         border: 1px solid #C5A880 !important;
         padding: 0.6rem 2rem !important;
         border-radius: 8px !important;
-        box-shadow: 0 4px 15px rgba(197, 168, 128, 0.25) !important;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        box-shadow: 0 4px 15px rgba(197,168,128,0.25) !important;
+        transition: all 0.3s cubic-bezier(0.4,0,0.2,1) !important;
         width: 100% !important;
     }
     div.stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 8px 25px rgba(197, 168, 128, 0.45) !important;
+        box-shadow: 0 8px 25px rgba(197,168,128,0.45) !important;
         background: linear-gradient(135deg, #D4B993 0%, #B59569 100%) !important;
-        color: #0B132B !important;
     }
-    div.stButton > button:active {
-        transform: translateY(1px) !important;
-    }
+    div.stButton > button:active { transform: translateY(1px) !important; }
 
-    /* Sidebar primary button styling (rebuild ChromaDB) */
     div[data-testid="stSidebar"] div.stButton > button {
         background: linear-gradient(135deg, #1C2B54 0%, #101B35 100%) !important;
         color: #C5A880 !important;
         border: 1px solid #C5A880 !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important;
     }
     div[data-testid="stSidebar"] div.stButton > button:hover {
         background: linear-gradient(135deg, #25396D 0%, #19274D 100%) !important;
         color: #FFFFFF !important;
-        box-shadow: 0 6px 18px rgba(197, 168, 128, 0.25) !important;
     }
-    
-    /* Luxury container cards */
+
+    /* ── Cards / containers ──────────────────────────────────────────────── */
     div[data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #FFFFFF !important;
         border: 1px solid #E5E8EB !important;
         border-radius: 12px !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.03) !important;
         padding: 1.5rem !important;
         margin-bottom: 1.5rem !important;
     }
 
-    /* Source list item styled card */
-    .source-card {
-        background-color: #FAF9F6 !important;
-        padding: 1.2rem !important;
-        border-radius: 10px !important;
-        border: 1px dashed rgba(197, 168, 128, 0.4) !important;
-        margin-bottom: 1rem !important;
-        direction: rtl;
-        text-align: right;
-    }
-
-    /* Modern Bubble Chat UI customization */
-    div[data-testid="stChatMessage"] {
-        background-color: transparent !important;
-        padding: 0px !important;
-        margin-bottom: 1.5rem !important;
-        display: flex !important;
-        gap: 12px !important;
-        align-items: flex-start !important;
-    }
-    
-    /* User Chat Bubble: Gold/Champagne on the Right */
-    div[data-testid="stChatMessage"]:has(svg) {
-        flex-direction: row-reverse !important;
-    }
-    div[data-testid="stChatMessage"]:has(svg) > div[data-testid="stChatMessageContent"] {
-        background-color: #C5A880 !important;
-        color: #0B132B !important;
-        border-radius: 18px 18px 2px 18px !important;
-        padding: 0.9rem 1.4rem !important;
-        box-shadow: 0 4px 15px rgba(197, 168, 128, 0.2) !important;
-        border: none !important;
-        margin-left: auto !important;
-        margin-right: 0px !important;
-    }
-    div[data-testid="stChatMessage"]:has(svg) > div[data-testid="stChatMessageContent"] p,
-    div[data-testid="stChatMessage"]:has(svg) > div[data-testid="stChatMessageContent"] span,
-    div[data-testid="stChatMessage"]:has(svg) > div[data-testid="stChatMessageContent"] li,
-    div[data-testid="stChatMessage"]:has(svg) > div[data-testid="stChatMessageContent"] strong {
-        color: #0B132B !important;
-        font-family: 'Rubik', sans-serif !important;
-    }
-    
-    /* Assistant Chat Bubble: Soft White/Gray on the Left */
-    div[data-testid="stChatMessage"]:not(:has(svg)) {
-        flex-direction: row !important;
-    }
-    div[data-testid="stChatMessage"]:not(:has(svg)) > div[data-testid="stChatMessageContent"] {
-        background-color: #FFFFFF !important;
-        color: #1F2937 !important;
-        border-radius: 18px 18px 18px 2px !important;
-        padding: 0.9rem 1.4rem !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-        border: 1px solid #E5E7EB !important;
-        margin-right: auto !important;
-        margin-left: 0px !important;
-    }
-    div[data-testid="stChatMessage"]:not(:has(svg)) > div[data-testid="stChatMessageContent"] p,
-    div[data-testid="stChatMessage"]:not(:has(svg)) > div[data-testid="stChatMessageContent"] span,
-    div[data-testid="stChatMessage"]:not(:has(svg)) > div[data-testid="stChatMessageContent"] li,
-    div[data-testid="stChatMessage"]:not(:has(svg)) > div[data-testid="stChatMessageContent"] strong {
-        color: #1F2937 !important;
-        font-family: 'Assistant', sans-serif !important;
-    }
-
-    /* Modern Chat Input floating modern pill styling */
-    div[data-testid="stChatInput"] {
-        border-radius: 30px !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
-        border: 1px solid #E5E7EB !important;
-        background-color: #FFFFFF !important;
-        padding: 4px 8px !important;
-    }
-    div[data-testid="stChatInput"] textarea {
-        background-color: transparent !important;
-        color: #1F2937 !important;
-        font-size: 1rem !important;
-        font-family: 'Assistant', sans-serif !important;
-    }
-
-    /* Tabs Styling */
+    /* ── Tabs ────────────────────────────────────────────────────────────── */
     div[data-testid="stTabBar"] {
         background-color: transparent !important;
         border-bottom: 2px solid #E5E7EB !important;
@@ -222,13 +230,24 @@ st.markdown("""
         font-weight: 600 !important;
         font-size: 1.05rem !important;
         color: #64748B !important;
-        transition: all 0.25s ease !important;
+        transition: color 0.2s ease !important;
         background: transparent !important;
         border: none !important;
     }
     button[data-testid="stMarker"][aria-selected="true"] {
         color: #0B132B !important;
         border-bottom: 3px solid #C5A880 !important;
+    }
+
+    /* ── RAG source card ──────────────────────────────────────────────────── */
+    .source-card {
+        background-color: #FAF9F6;
+        padding: 1.1rem 1.2rem;
+        border-radius: 10px;
+        border: 1px dashed rgba(197,168,128,0.4);
+        margin-bottom: 1rem;
+        direction: rtl;
+        text-align: right;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -301,7 +320,18 @@ with st.sidebar:
         else:
             st.info("לא נמצאו קבצי ידע בתיקיית knowledge_base")
 
-    rebuild = st.button("בנה מחדש ChromaDB", use_container_width=True)
+    rebuild = st.button("🔄 בנה מחדש ChromaDB", use_container_width=True)
+
+    st.divider()
+
+    # Clear chat button
+    msg_count = len(st.session_state.chat_history)
+    clear_label = f"🗑️ שיחה חדשה ({msg_count} הודעות)" if msg_count else "🗑️ שיחה חדשה"
+    if st.button(clear_label, use_container_width=True, disabled=(msg_count == 0)):
+        st.session_state.chat_history = []
+        st.session_state.last_answer = ""
+        st.session_state.last_sources = []
+        st.rerun()
 
     st.divider()
     with st.expander("💡 הצעות לשאלות בדמו"):
@@ -336,47 +366,70 @@ tab_chat, tab_image, tab_audio, tab_about = st.tabs([
 ])
 
 with tab_chat:
-    # Render all chat history messages using st.chat_message
-    for chat in st.session_state.chat_history:
+    history = st.session_state.chat_history
+    MAX_HISTORY = 10
+
+    # Message counter
+    if history:
+        st.markdown(
+            f"<p style='text-align:right; color:#9CA3AF; font-size:0.8rem; font-family:Rubik,sans-serif; margin-bottom:0.5rem;'>"
+            f"💬 {len(history)} הודעות"
+            f"{' | ⚡ מוצגות 10 אחרונות' if len(history) > MAX_HISTORY else ''}"
+            f"</p>",
+            unsafe_allow_html=True,
+        )
+
+    # Render history (newest at bottom — ChatGPT style)
+    displayed = history[-MAX_HISTORY:] if len(history) > MAX_HISTORY else history
+    for chat in displayed:
         with st.chat_message("user"):
             st.markdown(chat["question"])
         with st.chat_message("assistant"):
             st.markdown(chat["answer"])
 
-    # If sources exist from the last chat, show them here
+    # RAG sources expander (below last message)
     if st.session_state.last_sources:
-        with st.expander("🔍 מקורות RAG שנשלפו מ־ChromaDB עבור השאלה האחרונה"):
+        with st.expander("🔍 מקורות RAG שנשלפו עבור השאלה האחרונה"):
             for i, chunk in enumerate(st.session_state.last_sources, start=1):
                 st.markdown('<div class="source-card">', unsafe_allow_html=True)
                 st.markdown(f"**מקור {i}: {chunk['source']} | מקטע {chunk['chunk_index']}**")
                 st.write(chunk["content"])
                 st.markdown('</div>', unsafe_allow_html=True)
 
-    # Bottom chat input
-    user_question = st.chat_input("שאל/י על חבילה, מחיר או לוגיסטיקה של האירוע שלכם...")
-    if user_question:
-        # Display the user question immediately
-        with st.chat_message("user"):
-            st.markdown(user_question)
-        
-        try:
-            with st.spinner("מחפש ב־ChromaDB ומייצר תשובה דרך OpenAI Responses API..."):
-                chunks = retrieve_chunks(client, user_question, n_results=n_sources) if use_rag else []
-                rag_context = format_context(chunks)
-                image_context = st.session_state.image_analysis if use_image_context else ""
-                answer = chat_with_ai(
-                    client,
-                    user_message=user_question,
-                    rag_context=rag_context,
-                    image_analysis=image_context,
-                    chat_history=st.session_state.chat_history,
-                )
-                st.session_state.last_answer = answer
-                st.session_state.last_sources = chunks
-                st.session_state.chat_history.append({"question": user_question, "answer": answer})
-                st.rerun()
-        except Exception as exc:
-            st.error(f"שגיאה בשליחת הבקשה: {exc}")
+# ══════════════════════════════════════════════════════════════════════════════
+# Chat input at the TOP LEVEL (outside tabs) so Streamlit pins it fixed to the
+# bottom of the viewport natively — exactly like ChatGPT / Gemini.
+# ══════════════════════════════════════════════════════════════════════════════
+MAX_HISTORY = 10
+user_question = st.chat_input("שאל/י על חבילה, מחיר או לוגיסטיקה של האירוע שלכם...")
+
+if user_question:
+    try:
+        history = st.session_state.chat_history
+        # Step 1 — RAG retrieval
+        with st.spinner("🔍 שלב 1/2 — מחפש מידע רלוונטי בבסיס הידע..."):
+            chunks = retrieve_chunks(client, user_question, n_results=n_sources) if use_rag else []
+            rag_context = format_context(chunks)
+            image_context = st.session_state.image_analysis if use_image_context else ""
+
+        # Step 2 — AI generation (pass only last MAX_HISTORY turns)
+        trimmed_history = history[-MAX_HISTORY:] if len(history) > MAX_HISTORY else history
+        with st.spinner("🤖 שלב 2/2 — מייצר תשובה חכמה..."):
+            answer = chat_with_ai(
+                client,
+                user_message=user_question,
+                rag_context=rag_context,
+                image_analysis=image_context,
+                chat_history=trimmed_history,
+            )
+
+        st.session_state.last_answer = answer
+        st.session_state.last_sources = chunks
+        st.session_state.chat_history.append({"question": user_question, "answer": answer})
+        st.rerun()
+
+    except Exception as exc:
+        st.error(f"❌ שגיאה: {exc}")
 
 with tab_image:
     with st.container(border=True):
