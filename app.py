@@ -171,11 +171,43 @@ st.markdown("""
         background-color: #1F2937 !important;
         border: 1px solid #374151 !important;
         border-radius: 10px !important;
+        overflow: hidden !important;
     }
-    [data-testid="stSidebar"] div[data-testid="stExpander"] p {
-        color: #D1D5DB !important;
+    [data-testid="stSidebar"] div[data-testid="stExpander"] summary {
+        background-color: #1F2937 !important;
+        color: #F9FAFB !important; /* Make expander title white */
     }
-
+    [data-testid="stSidebar"] div[data-testid="stExpander"] summary:hover {
+        background-color: #374151 !important;
+        color: #FFFFFF !important;
+    }
+    [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] {
+        background-color: #111827 !important; /* Slightly darker inside */
+        border-radius: 0 0 10px 10px !important;
+        padding-top: 1rem !important;
+        border-top: 1px solid #374151 !important;
+    }
+    [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] p,
+    [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] li,
+    [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] span {
+        color: #D1D5DB !important; /* Light gray text */
+        font-family: 'Assistant', sans-serif !important;
+        font-size: 0.95rem !important;
+        line-height: 1.5 !important;
+    }
+    [data-testid="stSidebar"] div[data-testid="stExpanderDetails"] strong {
+        color: #F9FAFB !important; /* Bold is white */
+        font-weight: 600 !important;
+    }
+    /* Fix st.info inside dark sidebar */
+    [data-testid="stSidebar"] div[data-testid="stAlert"] {
+        background-color: rgba(59, 130, 246, 0.1) !important;
+        border: 1px solid rgba(59, 130, 246, 0.2) !important;
+        color: #93C5FD !important;
+    }
+    [data-testid="stSidebar"] div[data-testid="stAlert"] * {
+        color: #93C5FD !important;
+    }
     /* ── Buttons ─────────────────────────────────────────────────────────── */
     /* Primary / Main area buttons */
     div.stButton > button {
