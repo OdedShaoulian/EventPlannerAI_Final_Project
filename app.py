@@ -26,7 +26,8 @@ st.markdown("""
         font-family: 'Assistant', 'Rubik', sans-serif !important;
         background-color: #FAFAFA !important; /* Premium light gray */
     }
-    [data-testid="stHeader"] { display: none !important; }
+    [data-testid="stHeader"] { background-color: transparent !important; }
+    [data-testid="collapsedControl"] { color: #111827 !important; }
     footer { visibility: hidden !important; }
     #MainMenu { visibility: hidden !important; }
 
