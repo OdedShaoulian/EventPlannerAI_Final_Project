@@ -3,7 +3,9 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import streamlit as st
+# pyrefly: ignore [missing-import]
+import streamlit as st  
+# pyrefly: ignore [missing-import]
 from dotenv import load_dotenv
 
 import importlib
@@ -280,7 +282,7 @@ with st.sidebar:
     )
     
     api_key = st.text_input("OPENAI_API_KEY", value=OPENAI_API_KEY, type="password")
-    st.warning("אין להעלות מפתח API ל־GitHub. השתמשו בקובץ .env מקומי בלבד.")
+    st.caption("🔒 אין להעלות מפתח API ל־GitHub. השתמשו בקובץ `.env` מקומי בלבד.")
 
     st.divider()
     st.markdown("<h3>⚙️ הגדרות שיחה ולוגיסטיקה</h3>", unsafe_allow_html=True)
@@ -382,7 +384,7 @@ with tab_image:
         st.write("העלו תמונה של אולם, כניסה, רחבה, או צילום מסך של מקום האירוע.")
         
         uploaded_image = st.file_uploader(
-            "העלה תמונה",
+            "📷 גרור לכאן תמונה של מקום האירוע או לחץ לבחירה",
             type=["png", "jpg", "jpeg", "webp"],
         )
         image_prompt = st.text_area(
@@ -410,9 +412,7 @@ with tab_image:
 
         if st.session_state.image_analysis:
             st.markdown("### 🔍 תוצאת ניתוח התמונה")
-            st.markdown('<div class="chat-card">', unsafe_allow_html=True)
-            st.write(st.session_state.image_analysis)
-            st.markdown('</div>', unsafe_allow_html=True)
+            st.info(st.session_state.image_analysis)
             st.info("עכשיו אפשר לעבור ללשונית שיחה + RAG ולסמן 'שלב את ניתוח התמונה'.")
 
 with tab_audio:
@@ -423,7 +423,7 @@ with tab_audio:
         if st.session_state.last_answer:
             st.markdown("#### 📝 הטקסט האחרון שיומר לשמע")
             st.text_area("תשובת AI אחרונה", value=st.session_state.last_answer, height=150, disabled=True)
-            if st.button("צור קובץ שמע מהתשובה", type="primary", use_container_width=True):
+            if st.button("🎙️ צור קובץ שמע MP3", type="primary", use_container_width=True):
                 try:
                     with st.spinner("יוצר קובץ MP3 באמצעות OpenAI Text-to-Speech..."):
                         audio_path = create_speech(client, st.session_state.last_answer)
