@@ -58,22 +58,42 @@ def build_user_prompt(user_message: str, rag_context: str = "", image_analysis: 
     return "\n\n---\n\n".join(sections)
 
 
-def chat_with_ai(openai_client: OpenAI, user_message: str, rag_context: str = "", image_analysis: str = "") -> str:
-    """Conversational AI through OpenAI Responses API."""
+def chat_with_ai(
+    openai_client: OpenAI,
+    user_message: str,
+    rag_context: str = "",
+    image_analysis: str = "",
+    chat_history: list[dict[str, str]] | None = None,
+) -> str:
+    """Conversational AI through OpenAI Responses API with history support."""
+    inputs = []
+    
+    # 1. Format the conversation history
+    if chat_history:
+        for chat in chat_history:
+            inputs.append({
+                "role": "user",
+                "content": [{"type": "input_text", "text": chat["question"]}]
+            })
+            inputs.append({
+                "role": "assistant",
+                "content": [{"type": "output_text", "text": chat["answer"]}]
+            })
+            
+    # 2. Append the current message grounded with context
     final_prompt = build_user_prompt(user_message, rag_context, image_analysis)
+    inputs.append({
+        "role": "user",
+        "content": [{"type": "input_text", "text": final_prompt}]
+    })
+
     response = openai_client.responses.create(
         model=CHAT_MODEL,
         instructions=SYSTEM_PROMPT,
-        input=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "input_text", "text": final_prompt},
-                ],
-            }
-        ],
+        input=inputs,
     )
     return extract_output_text(response)
+
 
 
 def analyze_image(openai_client: OpenAI, image_bytes: bytes, mime_type: str, prompt: Optional[str] = None) -> str:

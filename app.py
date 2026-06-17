@@ -6,6 +6,17 @@ from pathlib import Path
 import streamlit as st
 from dotenv import load_dotenv
 
+import importlib
+import src.config
+import src.openai_utils
+import src.rag
+import src.tts
+
+importlib.reload(src.config)
+importlib.reload(src.openai_utils)
+importlib.reload(src.rag)
+importlib.reload(src.tts)
+
 from src.config import BASE_DIR, KNOWLEDGE_DIR, OPENAI_API_KEY
 from src.openai_utils import analyze_image, chat_with_ai, create_openai_client
 from src.rag import read_knowledge_files, rebuild_vector_db, retrieve_chunks, format_context
@@ -335,6 +346,7 @@ with tab_chat:
                     user_message=user_question,
                     rag_context=rag_context,
                     image_analysis=image_context,
+                    chat_history=st.session_state.chat_history,
                 )
                 st.session_state.last_answer = answer
                 st.session_state.last_sources = chunks
