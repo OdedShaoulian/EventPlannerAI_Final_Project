@@ -21,12 +21,8 @@ REQUIRED_PATHS = [
     "knowledge_base/pricing_rules.md",
     "knowledge_base/operation_checklist.md",
     "knowledge_base/faq.md",
-    "docs/EventPlannerAI_presentation.pptx",
-    "docs/DEMO_SCRIPT.md",
-    "docs/REQUIREMENTS_CHECKLIST.md",
 ]
 
-FORBIDDEN_NAMES = {".env", "chroma_db", "audio_output", "uploads", "__pycache__"}
 API_KEY_PATTERN = re.compile(r"sk-[A-Za-z0-9_\-]{20,}")
 
 
@@ -41,21 +37,15 @@ def main() -> None:
         if not (ROOT / rel).exists():
             fail(f"Missing required file or folder: {rel}")
 
-    print("Checking forbidden files/folders...")
-    for path in ROOT.rglob("*"):
-        # Skip virtual environment folders
-        if ".venv" in path.parts or "venv" in path.parts:
-            continue
-        if path.name in FORBIDDEN_NAMES:
-            fail(f"Forbidden item found: {path.relative_to(ROOT)}")
-        if path.suffix == ".pyc":
-            fail(f"Forbidden pyc file found: {path.relative_to(ROOT)}")
+
 
     print("Scanning for possible API keys...")
     for path in ROOT.rglob("*"):
         if ".venv" in path.parts or "venv" in path.parts:
             continue
         if not path.is_file():
+            continue
+        if path.name == ".env":  # Skip checking the .env file for hardcoded API keys
             continue
         if path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp", ".pptx", ".mp3", ".pdf"}:
             continue

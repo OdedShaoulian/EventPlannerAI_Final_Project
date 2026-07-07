@@ -172,7 +172,7 @@ python -m venv .venv
 הפעלת הסביבה ב־Windows:
 
 ```bash
-.venv\Scriptsctivate
+.venv\Scripts\activate
 ```
 
 הפעלת הסביבה ב־Mac/Linux:
@@ -319,6 +319,7 @@ sample_inputs/sample_event_venue.png
 
 - Bar Hatuka
 - Oded Shaoulian
+- Or Regev
 
 ---
 
